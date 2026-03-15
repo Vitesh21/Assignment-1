@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { fetchOrders, updateOrderStatus } from '../api';
+import { fetchOrders, updateOrderStatus, cancelOrder } from '../api';
 
 function OrderList() {
   const [orders, setOrders] = useState([]);
@@ -17,6 +17,18 @@ function OrderList() {
     // but the stale closure over sortField/sortDir means sorting resets
     const data = await fetchOrders();
     setOrders(data);
+  };
+
+  const handleCancel = async (orderId) => {
+    if (window.confirm('Are you sure you want to cancel this order?')) {
+      try {
+        await cancelOrder(orderId);
+        const data = await fetchOrders();
+        setOrders(data);
+      } catch (err) {
+        alert('Failed to cancel order');
+      }
+    }
   };
 
   const sortedOrders = [...orders].sort((a, b) => {
@@ -54,6 +66,7 @@ function OrderList() {
             <th onClick={() => handleSort('total_amount')} style={{ cursor: 'pointer' }}>Total</th>
             <th>Status</th>
             <th onClick={() => handleSort('created_at')} style={{ cursor: 'pointer' }}>Date</th>
+            <th>Actions</th>
           </tr>
         </thead>
         <tbody>
@@ -80,6 +93,11 @@ function OrderList() {
                 </select>
               </td>
               <td>{new Date(order.created_at).toLocaleDateString()}</td>
+              <td>
+                {(order.status === 'pending' || order.status === 'confirmed') && (
+                  <button onClick={() => handleCancel(order.id)} style={{ padding: '4px 8px', background: '#e74c3c', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>Cancel</button>
+                )}
+              </td>
             </tr>
           ))}
         </tbody>
