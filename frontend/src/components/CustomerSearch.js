@@ -10,21 +10,40 @@ function CustomerSearch() {
   const [newPhone, setNewPhone] = useState('');
   const [message, setMessage] = useState(null);
 
-  // BUG: No debounce - fires API call on every keystroke
-  // BUG: No loading state, no error handling - blank results if API fails
-  const handleSearch = async (value) => {
+  const [loading, setLoading] = useState(false);
+  const searchTimeout = React.useRef(null);
+
+  const handleSearch = (value) => {
     setQuery(value);
-    if (value.length > 0) {
-      const data = await searchCustomers(value);
-      setResults(data);
+    
+    if (searchTimeout.current) {
+      clearTimeout(searchTimeout.current);
+    }
+    
+    if (value.trim().length > 0) {
+      setLoading(true);
+      searchTimeout.current = setTimeout(async () => {
+        try {
+          const data = await searchCustomers(value);
+          setResults(data);
+        } catch (err) {
+          setMessage({ type: 'error', text: 'Failed to search customers' });
+        } finally {
+          setLoading(false);
+        }
+      }, 300);
     } else {
       setResults([]);
+      setLoading(false);
     }
   };
 
   const handleAddCustomer = async () => {
-    // BUG: No client-side validation either - sends empty strings to the
-    // backend which also has no validation
+    if (!newName.trim() || !newEmail.trim() || !newPhone.trim()) {
+      setMessage({ type: 'error', text: 'Please fill all fields' });
+      return;
+    }
+
     const result = await createCustomer({
       name: newName,
       email: newEmail,

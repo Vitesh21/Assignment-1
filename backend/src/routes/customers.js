@@ -36,10 +36,21 @@ router.get('/:id', async (req, res) => {
   }
 });
 
-// Create customer - BUG: no input validation at all
+// Create customer
 router.post('/', async (req, res) => {
   try {
     const { name, email, phone } = req.body;
+    
+    // Basic validation
+    if (!name || name.trim() === '' || !email || email.trim() === '') {
+      return res.status(400).json({ error: 'Name and email are required fields' });
+    }
+    
+    // Email validation
+    if (!/^\S+@\S+\.\S+$/.test(email)) {
+      return res.status(400).json({ error: 'Invalid email format' });
+    }
+    
     const result = await pool.query(
       'INSERT INTO customers (name, email, phone) VALUES ($1, $2, $3) RETURNING *',
       [name, email, phone]
